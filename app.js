@@ -69,7 +69,7 @@ function getAfter(container,y){ const els=[...container.querySelectorAll(".item:
 document.getElementById("addBtn").onclick=()=>{ const v=inputEl.value.trim(); if(!v) return; tasks.push({id:uid(),text:v,done:false}); inputEl.value=""; saveTasks(tasks); render(); };
 inputEl.addEventListener("keydown",e=>{ if(e.key==="Enter") document.getElementById("addBtn").click(); });
 document.querySelectorAll(".tab").forEach(b=>{ b.onclick=()=>{ document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active")); b.classList.add("active"); filter=b.dataset.filter; render(); }; });
-searchEl.oninput=()=>{ q=searchEl.value||""; render(); };
+searchEl.oninput = () => { q = searchEl.value || ""; render(); };
 clearCompletedBtn.onclick=()=>{ tasks=tasks.filter(t=>!t.done); saveTasks(tasks); render(); };
 exportBtn.onclick=()=>{ const blob=new Blob([JSON.stringify(tasks,null,2)],{type:"application/json"}); const url=URL.createObjectURL(blob); const a=document.createElement("a"); a.href=url; a.download="tasks.json"; a.click(); URL.revokeObjectURL(url); };
 importFile.onchange=async e=>{ const f=e.target.files?.[0]; if(!f) return; const text=await f.text(); try{ const data=JSON.parse(text); if(!Array.isArray(data)) throw new Error("Invalid JSON"); const map=new Map(tasks.map(t=>[t.id,t])); for(const t of data){ if(t && typeof t.text==="string") map.set(t.id ?? uid(), {id:t.id ?? uid(), text:t.text, done:!!t.done}); } tasks=[...map.values()]; saveTasks(tasks); render(); } catch { alert("Import failed: invalid JSON"); } finally{ e.target.value=""; } };
