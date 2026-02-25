@@ -4,14 +4,13 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Beautiful TODO</title>
-  style.css
+  style.css?v=3
 </head>
 <body>
   <div class="bg"></div>
-
   <main class="card">
     <header class="header">
-      <h1 class="title">TODO</h1>
+      <h1 class="title">My Tasks</h1>
       <div class="counters">
         <span id="countAll" class="chip">All: 0</span>
         <span id="countActive" class="chip">Active: 0</span>
@@ -22,9 +21,7 @@
     <section class="controls">
       <div class="input-row">
         <input id="newTaskInput" class="input" type="text" placeholder="What needs to be done?" />
-        <button id="addBtn" class="btn primary" title="Add task">
-          <span class="icon">＋</span> Add
-        </button>
+        <button id="addBtn" class="btn primary" title="Add task">+ Add</button>
       </div>
 
       <div class="toolbar">
@@ -47,8 +44,7 @@
         <button id="clearCompletedBtn" class="btn ghost">Clear completed</button>
         <button id="exportBtn" class="btn ghost">Export JSON</button>
         <label class="btn ghost file-label">
-          Import JSON
-          <input id="importFile" type="file" accept="application/json" hidden>
+          Import JSON <input id="importFile" type="file" accept="application/json" hidden>
         </label>
       </div>
       <div class="right">
@@ -56,7 +52,6 @@
       </div>
     </footer>
   </main>
-
-  app.js</script>
+  app.js?v=3</script>
 </body>
 </html>

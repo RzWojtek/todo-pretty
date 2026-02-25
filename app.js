@@ -1,18 +1,12 @@
 // --- Storage ---
 const KEY = "pretty_todo_tasks_v1";
-
-function loadTasks() {
-  try { return JSON.parse(localStorage.getItem(KEY)) ?? []; }
-  catch { return []; }
-}
-function saveTasks(list) {
-  localStorage.setItem(KEY, JSON.stringify(list));
-}
+function loadTasks(){ try{ return JSON.parse(localStorage.getItem(KEY)) ?? [] }catch{return []} }
+function saveTasks(list){ localStorage.setItem(KEY, JSON.stringify(list)) }
 
 // --- State ---
 let tasks = loadTasks();
-let filter = "all"; // all | active | completed
-let q = "";         // search query
+let filter = "all";
+let q = "";
 
 // --- Elements ---
 const listEl = document.getElementById("list");
@@ -27,186 +21,57 @@ const countAll = document.getElementById("countAll");
 const countActive = document.getElementById("countActive");
 const countDone = document.getElementById("countDone");
 
-// (opcjonalnie) ustaw link do repo:
+// ustaw swój link do repo
 linkGitHub.href = "https://github.com/RzWojtek/todo-pretty";
 
-// --- Helpers ---
-const uid = () => Math.random().toString(36).slice(2) + Date.now().toString(36);
+const uid = () => Math.random().toString(36).slice(2)+Date.now().toString(36);
 
-function filtered() {
-  let arr = [...tasks];
-  if (filter === "active") arr = arr.filter(t => !t.done);
-  if (filter === "completed") arr = arr.filter(t => t.done);
-  if (q.trim()) {
-    const qq = q.trim().toLowerCase();
-    arr = arr.filter(t => t.text.toLowerCase().includes(qq));
-  }
+function filtered(){
+  let arr=[...tasks];
+  if(filter==="active") arr=arr.filter(t=>!t.done);
+  if(filter==="completed") arr=arr.filter(t=>t.done);
+  if(q.trim()){ const s=q.trim().toLowerCase(); arr=arr.filter(t=>t.text.toLowerCase().includes(s)); }
   return arr;
 }
-
-function updateCounters() {
-  const all = tasks.length;
-  const done = tasks.filter(t => t.done).length;
-  const active = all - done;
-  countAll.textContent = `All: ${all}`;
-  countActive.textContent = `Active: ${active}`;
-  countDone.textContent = `Done: ${done}`;
+function updateCounters(){
+  const all=tasks.length, done=tasks.filter(t=>t.done).length, active=all-done;
+  countAll.textContent=`All: ${all}`; countActive.textContent=`Active: ${active}`; countDone.textContent=`Done: ${done}`;
 }
 
-function render() {
-  listEl.innerHTML = "";
-  updateCounters();
-  const data = filtered();
+function render(){
+  listEl.innerHTML=""; updateCounters(); const data=filtered();
+  if(data.length===0){ const empty=document.createElement("div"); empty.style.color="#8ea0cf"; empty.style.textAlign="center"; empty.style.padding="14px"; empty.textContent="No tasks found."; listEl.appendChild(empty); return;}
+  for(const t of data){
+    const li=document.createElement("li"); li.className="item"; li.draggable=true; li.dataset.id=t.id;
+    const checkbox=document.createElement("button");
+    checkbox.className="checkbox"+(t.done?" done":""); checkbox.title=t.done?"Mark as active":"Mark as done"; checkbox.textContent=t.done?"✓":""; checkbox.onclick=()=>{t.done=!t.done; saveTasks(tasks); render();};
+    const text=document.createElement("div"); text.className="text"+(t.done?" done":""); text.textContent=t.text; text.title="Double‑click to edit"; text.ondblclick=()=>startInlineEdit(text,t);
+    const actions=document.createElement("div"); actions.className="actions";
+    const editBtn=document.createElement("button"); editBtn.className="icon-btn"; editBtn.title="Edit"; editBtn.textContent="✎"; editBtn.onclick=()=>startInlineEdit(text,t);
+    const delBtn=document.createElement("button"); delBtn.className="icon-btn"; delBtn.title="Delete"; delBtn.textContent="🗑"; delBtn.onclick=()=>{tasks=tasks.filter(x=>x.id!==t.id); saveTasks(tasks); render();};
+    actions.append(editBtn,delBtn); li.append(checkbox,text,actions);
 
-  if (data.length === 0) {
-    const empty = document.createElement("div");
-    empty.style.color = "#8ea0cf";
-    empty.style.textAlign = "center";
-    empty.style.padding = "14px";
-    empty.textContent = "No tasks found.";
-    listEl.appendChild(empty);
-    return;
-  }
-
-  for (const t of data) {
-    const li = document.createElement("li");
-    li.className = "item";
-    li.draggable = true;
-    li.dataset.id = t.id;
-
-    const checkbox = document.createElement("button");
-    checkbox.className = "checkbox" + (t.done ? " done" : "");
-    checkbox.title = t.done ? "Mark as active" : "Mark as done";
-    checkbox.textContent = t.done ? "✓" : "";
-    checkbox.onclick = () => { t.done = !t.done; saveTasks(tasks); render(); };
-
-    const text = document.createElement("div");
-    text.className = "text" + (t.done ? " done" : "");
-    text.textContent = t.text;
-    text.title = "Double‑click to edit";
-    text.ondblclick = () => startInlineEdit(text, t);
-
-    const actions = document.createElement("div");
-    actions.className = "actions";
-
-    const editBtn = document.createElement("button");
-    editBtn.className = "icon-btn";
-    editBtn.title = "Edit";
-    editBtn.innerHTML = `<span class="icon">✎</span>`;
-    editBtn.onclick = () => startInlineEdit(text, t);
-
-    const delBtn = document.createElement("button");
-    delBtn.className = "icon-btn";
-    delBtn.title = "Delete";
-    delBtn.innerHTML = `<span class="icon">🗑</span>`;
-    delBtn.onclick = () => { tasks = tasks.filter(x => x.id !== t.id); saveTasks(tasks); render(); };
-
-    actions.append(editBtn, delBtn);
-    li.append(checkbox, text, actions);
-
-    // Drag & Drop
-    li.addEventListener("dragstart", (e) => {
-      li.classList.add("dragging");
-      e.dataTransfer.setData("text/plain", t.id);
-    });
-    li.addEventListener("dragend", () => li.classList.remove("dragging"));
-
+    li.addEventListener("dragstart",e=>{ li.classList.add("dragging"); e.dataTransfer.setData("text/plain",t.id); });
+    li.addEventListener("dragend",()=>li.classList.remove("dragging"));
     listEl.appendChild(li);
   }
 }
-
-function startInlineEdit(textEl, task) {
-  const input = document.createElement("input");
-  input.type = "text";
-  input.value = task.text;
-  input.className = "input";
-  textEl.replaceWith(input);
-  input.focus();
-  input.onblur = finish;
-  input.onkeydown = (e) => {
-    if (e.key === "Enter") finish();
-    if (e.key === "Escape") { input.value = task.text; finish(); }
-  };
-  function finish() {
-    const newText = input.value.trim();
-    if (newText) task.text = newText;
-    saveTasks(tasks);
-    render();
-  }
+function startInlineEdit(textEl,task){
+  const input=document.createElement("input"); input.type="text"; input.value=task.text; input.className="input";
+  textEl.replaceWith(input); input.focus(); input.onblur=finish; input.onkeydown=e=>{ if(e.key==="Enter") finish(); if(e.key==="Escape"){input.value=task.text; finish();}};
+  function finish(){ const v=input.value.trim(); if(v) task.text=v; saveTasks(tasks); render(); }
 }
 
-// DnD container
-listEl.addEventListener("dragover", (e) => {
-  e.preventDefault();
-  const dragging = document.querySelector(".item.dragging");
-  const afterEl = getDragAfterElement(listEl, e.clientY);
-  if (!dragging) return;
-  if (afterEl == null) listEl.appendChild(dragging);
-  else listEl.insertBefore(dragging, afterEl);
-});
+listEl.addEventListener("dragover",e=>{ e.preventDefault(); const dragging=document.querySelector(".item.dragging"); const after=getAfter(listEl,e.clientY); if(!dragging) return; if(after==null) listEl.appendChild(dragging); else listEl.insertBefore(dragging,after); });
+listEl.addEventListener("drop",()=>{ const ids=[...listEl.querySelectorAll(".item")].map(li=>li.dataset.id); tasks.sort((a,b)=>ids.indexOf(a.id)-ids.indexOf(b.id)); saveTasks(tasks); });
+function getAfter(container,y){ const els=[...container.querySelectorAll(".item:not(.dragging)")]; return els.reduce((closest,child)=>{ const box=child.getBoundingClientRect(); const offset=y-(box.top+box.height/2); if(offset<0 && offset>closest.offset) return {offset,element:child}; else return closest; },{offset:Number.NEGATIVE_INFINITY}).element; }
 
-listEl.addEventListener("drop", () => {
-  const ids = [...listEl.querySelectorAll(".item")].map(li => li.dataset.id);
-  tasks.sort((a, b) => ids.indexOf(a.id) - ids.indexOf(b.id));
-  saveTasks(tasks);
-});
+document.getElementById("addBtn").onclick=()=>{ const v=inputEl.value.trim(); if(!v) return; tasks.push({id:uid(),text:v,done:false}); inputEl.value=""; saveTasks(tasks); render(); };
+inputEl.addEventListener("keydown",e=>{ if(e.key==="Enter") document.getElementById("addBtn").click(); });
+document.querySelectorAll(".tab").forEach(b=>{ b.onclick=()=>{ document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active")); b.classList.add("active"); filter=b.dataset.filter; render(); }; });
+searchEl.oninput=()=>{ q=searchEl.value||""; render(); };
+clearCompletedBtn.onclick=()=>{ tasks=tasks.filter(t=>!t.done); saveTasks(tasks); render(); };
+exportBtn.onclick=()=>{ const blob=new Blob([JSON.stringify(tasks,null,2)],{type:"application/json"}); const url=URL.createObjectURL(blob); const a=document.createElement("a"); a.href=url; a.download="tasks.json"; a.click(); URL.revokeObjectURL(url); };
+importFile.onchange=async e=>{ const f=e.target.files?.[0]; if(!f) return; const text=await f.text(); try{ const data=JSON.parse(text); if(!Array.isArray(data)) throw new Error("Invalid JSON"); const map=new Map(tasks.map(t=>[t.id,t])); for(const t of data){ if(t && typeof t.text==="string") map.set(t.id ?? uid(), {id:t.id ?? uid(), text:t.text, done:!!t.done}); } tasks=[...map.values()]; saveTasks(tasks); render(); } catch { alert("Import failed: invalid JSON"); } finally{ e.target.value=""; } };
 
-function getDragAfterElement(container, y) {
-  const els = [...container.querySelectorAll(".item:not(.dragging)")];
-  return els.reduce((closest, child) => {
-    const box = child.getBoundingClientRect();
-    const offset = y - (box.top + box.height/2);
-    if (offset < 0 && offset > closest.offset) return { offset, element: child };
-    else return closest;
-  }, { offset: Number.NEGATIVE_INFINITY }).element;
-}
-
-// Events
-document.getElementById("addBtn").onclick = () => {
-  const val = inputEl.value.trim();
-  if (!val) return;
-  tasks.push({ id: uid(), text: val, done: false });
-  inputEl.value = "";
-  saveTasks(tasks); render();
-};
-inputEl.addEventListener("keydown", (e) => { if (e.key === "Enter") document.getElementById("addBtn").click(); });
-
-document.querySelectorAll(".tab").forEach(btn => {
-  btn.onclick = () => {
-    document.querySelectorAll(".tab").forEach(b => b.classList.remove("active"));
-    btn.classList.add("active");
-    filter = btn.dataset.filter; render();
-  };
-});
-
-searchEl.oninput = () => { q = searchEl.value || ""; render(); };
-
-clearCompletedBtn.onclick = () => { tasks = tasks.filter(t => !t.done); saveTasks(tasks); render(); };
-
-exportBtn.onclick = () => {
-  const blob = new Blob([JSON.stringify(tasks, null, 2)], { type: "application/json" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a"); a.href = url; a.download = "tasks.json"; a.click();
-  URL.revokeObjectURL(url);
-};
-
-importFile.onchange = async (e) => {
-  const file = e.target.files?.[0]; if (!file) return;
-  const text = await file.text();
-  try {
-    const data = JSON.parse(text);
-    if (!Array.isArray(data)) throw new Error("Invalid JSON");
-    const map = new Map(tasks.map(t => [t.id, t]));
-    for (const t of data) {
-      if (t && typeof t.text === "string") map.set(t.id ?? uid(), { id: t.id ?? uid(), text: t.text, done: !!t.done });
-    }
-    tasks = [...map.values()];
-    saveTasks(tasks); render();
-  } catch {
-    alert("Import failed: invalid JSON file.");
-  } finally { e.target.value = ""; }
-};
-
-// Start
 render();
-
