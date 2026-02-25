@@ -1,4 +1,3 @@
-cat > app.js <<'EOF'
 // --- Storage ---
 const KEY = "pretty_todo_tasks_v1";
 
@@ -19,19 +18,17 @@ let q = "";         // search query
 const listEl = document.getElementById("list");
 const inputEl = document.getElementById("newTaskInput");
 const addBtn = document.getElementById("addBtn");
-const tabs = document.querySelectorAll(".tab");
 const searchEl = document.getElementById("searchInput");
 const clearCompletedBtn = document.getElementById("clearCompletedBtn");
 const exportBtn = document.getElementById("exportBtn");
 const importFile = document.getElementById("importFile");
 const linkGitHub = document.getElementById("githubLink");
-
 const countAll = document.getElementById("countAll");
 const countActive = document.getElementById("countActive");
 const countDone = document.getElementById("countDone");
 
-// Ustaw link do repo (podmień USERNAME i REPO)
-linkGitHub.href = `https://github.com/${'${GH_USER:-USERNAME}'}/${'${REPO:-todo-pretty}'}`;
+// (opcjonalnie) ustaw link do repo:
+linkGitHub.href = "https://github.com/RzWojtek/todo-pretty";
 
 // --- Helpers ---
 const uid = () => Math.random().toString(36).slice(2) + Date.now().toString(36);
@@ -81,9 +78,7 @@ function render() {
     checkbox.className = "checkbox" + (t.done ? " done" : "");
     checkbox.title = t.done ? "Mark as active" : "Mark as done";
     checkbox.textContent = t.done ? "✓" : "";
-    checkbox.onclick = () => {
-      t.done = !t.done; saveTasks(tasks); render();
-    };
+    checkbox.onclick = () => { t.done = !t.done; saveTasks(tasks); render(); };
 
     const text = document.createElement("div");
     text.className = "text" + (t.done ? " done" : "");
@@ -151,7 +146,6 @@ listEl.addEventListener("dragover", (e) => {
 });
 
 listEl.addEventListener("drop", () => {
-  // Zapisz nową kolejność wg DOM
   const ids = [...listEl.querySelectorAll(".item")].map(li => li.dataset.id);
   tasks.sort((a, b) => ids.indexOf(a.id) - ids.indexOf(b.id));
   saveTasks(tasks);
@@ -167,71 +161,52 @@ function getDragAfterElement(container, y) {
   }, { offset: Number.NEGATIVE_INFINITY }).element;
 }
 
-// --- Events ---
-const addBtnEl = document.getElementById("addBtn");
-addBtnEl.onclick = () => {
+// Events
+document.getElementById("addBtn").onclick = () => {
   const val = inputEl.value.trim();
   if (!val) return;
   tasks.push({ id: uid(), text: val, done: false });
   inputEl.value = "";
-  saveTasks(tasks);
-  render();
+  saveTasks(tasks); render();
 };
+inputEl.addEventListener("keydown", (e) => { if (e.key === "Enter") document.getElementById("addBtn").click(); });
 
-inputEl.addEventListener("keydown", (e) => {
-  if (e.key === "Enter") addBtnEl.click();
-});
-
-const tabsEls = document.querySelectorAll(".tab");
-tabsEls.forEach(btn => {
+document.querySelectorAll(".tab").forEach(btn => {
   btn.onclick = () => {
-    tabsEls.forEach(b => b.classList.remove("active"));
+    document.querySelectorAll(".tab").forEach(b => b.classList.remove("active"));
     btn.classList.add("active");
-    filter = btn.dataset.filter;
-    render();
+    filter = btn.dataset.filter; render();
   };
 });
 
-const searchEl2 = document.getElementById("searchInput");
-searchEl2.oninput = () => {
-  q = searchEl2.value || "";
-  render();
-};
+searchEl.oninput = () => { q = searchEl.value || ""; render(); };
 
-clearCompletedBtn.onclick = () => {
-  tasks = tasks.filter(t => !t.done);
-  saveTasks(tasks); render();
-};
+clearCompletedBtn.onclick = () => { tasks = tasks.filter(t => !t.done); saveTasks(tasks); render(); };
 
 exportBtn.onclick = () => {
   const blob = new Blob([JSON.stringify(tasks, null, 2)], { type: "application/json" });
   const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url; a.download = "tasks.json"; a.click();
+  const a = document.createElement("a"); a.href = url; a.download = "tasks.json"; a.click();
   URL.revokeObjectURL(url);
 };
 
 importFile.onchange = async (e) => {
-  const file = e.target.files?.[0];
-  if (!file) return;
+  const file = e.target.files?.[0]; if (!file) return;
   const text = await file.text();
   try {
     const data = JSON.parse(text);
     if (!Array.isArray(data)) throw new Error("Invalid JSON");
     const map = new Map(tasks.map(t => [t.id, t]));
     for (const t of data) {
-      if (t && typeof t.text === "string") map.set(t.id ?? crypto.randomUUID?.() ?? Math.random().toString(36).slice(2),
-        { id: t.id ?? crypto.randomUUID?.() ?? Math.random().toString(36).slice(2), text: t.text, done: !!t.done });
+      if (t && typeof t.text === "string") map.set(t.id ?? uid(), { id: t.id ?? uid(), text: t.text, done: !!t.done });
     }
     tasks = [...map.values()];
     saveTasks(tasks); render();
   } catch {
     alert("Import failed: invalid JSON file.");
-  } finally {
-    e.target.value = "";
-  }
+  } finally { e.target.value = ""; }
 };
 
 // Start
 render();
-EOF
+

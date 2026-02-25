@@ -1,4 +1,3 @@
-cat > style.css <<'EOF'
 :root{
   --bg: #0b1020;
   --grad1: #0b1020;
@@ -101,4 +100,4 @@ body{
 .link:hover{text-decoration:underline}
 
 .file-label{cursor:pointer}
-EOF
+
